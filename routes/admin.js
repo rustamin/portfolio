@@ -28,7 +28,7 @@ router.get('/new', function(req, res, next) {
 	res.render('new');
 })
 
-router.post('/new', multer({dest: './uploads'}).single('projectimage'), function(req, res, next){
+router.post('/new', multer({dest: './public/img/portfolio'}).single('projectimage'), function(req, res, next){
 	// get form values
 	var title 		= req.body.title;
 	var description = req.body.description;
@@ -36,12 +36,10 @@ router.post('/new', multer({dest: './uploads'}).single('projectimage'), function
 	var client 		= req.body.client;
 	var projectdate	= req.body.projectdate;
 
-	console.log(req.file);
 
 	// Check Image
 	if(req.file) {
-		console.log("req.file is true");
-		// file info
+		// file info		
 		var projectImageName 			= req.file.originalname;
 		var projectImageMime 			= req.file.mimetype;
 		var projectImagePath 			= req.file.path;
@@ -50,9 +48,6 @@ router.post('/new', multer({dest: './uploads'}).single('projectimage'), function
 	else {
 		var projectImageName = 'noimage.jpg';
 	}
-
-	console.log("title: " + title);
-	console.log("img: " + projectImageName);
 
 	// Form Field Validation
 	req.checkBody('title', 'Title field is required').notEmpty();
