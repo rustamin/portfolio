@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var mysql = require('mysql');
 
+var multer = require('multer');
+
 var connection = mysql.createConnection({
 	host 	: 'localhost',
 	user 	: 'root',
@@ -26,7 +28,7 @@ router.get('/new', function(req, res, next) {
 	res.render('new');
 })
 
-router.post('/new', function(req, res, next){
+router.post('/new', multer({dest: './uploads'}).single('projectimage'), function(req, res, next){
 	// get form values
 	var title 		= req.body.title;
 	var description = req.body.description;
@@ -34,26 +36,29 @@ router.post('/new', function(req, res, next){
 	var client 		= req.body.client;
 	var projectdate	= req.body.projectdate;
 
+	console.log(req.file);
 
 	// Check Image
-	if(req.files.projectimage) {
+	if(req.file) {
+		console.log("req.file is true");
 		// file info
-		var projectImageOriginalName	= req.files.projectimage.originalname;
-		var projectImageName 			= req.files.projectimage.name;
-		var projectImageMime 			= req.files.projectimage.mime;
-		var projectImagePath 			= req.files.projectimage.path;
-		var projectImageExt 			= req.files.projectimage.extension;
-		var projectImageSize 			= req.files.projectimage.size;
+		var projectImageName 			= req.file.originalname;
+		var projectImageMime 			= req.file.mimetype;
+		var projectImagePath 			= req.file.path;
+		var projectImageSize 			= req.file.size;
 	}
 	else {
 		var projectImageName = 'noimage.jpg';
 	}
 
+	console.log("title: " + title);
+	console.log("img: " + projectImageName);
+
 	// Form Field Validation
 	req.checkBody('title', 'Title field is required').notEmpty();
 	req.checkBody('service', 'Service field is required').notEmpty();
 
-	var errors = req.validationError();
+	var errors = req.validationErrors();
 
 	if(errors) {
 		res.render('new', {
