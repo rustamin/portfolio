@@ -5,26 +5,11 @@ var mysql = require('mysql');
 var path = require('path');
 var multer = require('multer');
 
-// var storage = multer.diskStorage({
-// 	destination: function(req, file, cb) {
-// 		cb(null, '/tmp/my-uploads');
-// 	},
-// 	filename: function(req, file, cb) {
-// 		cb(null, file.fieldname + '-' + Date.now());
-// 	}
-// });
 
-// ORIGINAL FROM this works. can change filename
+// source
 // http://stackoverflow.com/questions/32184589/renaming-an-uploaded-file-using-multer-doesnt-work-express-js
 
-// var options = multer.diskStorage({ destination : 'uploads/' ,
-//   filename: function (req, file, cb) {
-//   	console.log(file);
-//     cb(null, (Math.random().toString(36)+'00000000000000000').slice(2, 10) + Date.now() + path.extname(file.originalname));
-//   }
-// });
-
-// sama kayak nama asli file yg di upload
+// filename == original filename
 var options = multer.diskStorage({ destination : 'public/img' ,
   filename: function (req, file, cb) {
   	console.log(file);
@@ -32,11 +17,7 @@ var options = multer.diskStorage({ destination : 'public/img' ,
   }
 });
 
-// var upload = multer({storage: storage});
-
 var upload= multer({ storage: options });
-
-
 
 var connection = mysql.createConnection({
 	host 	: 'localhost',
@@ -58,22 +39,19 @@ router.get('/', function(req, res, next) {
 	});	
 });
 
+/* GET New Project. */
 router.get('/new', function(req, res, next) {
 	res.render('new');
 })
 
 
-
+/* POST New Project. */
 router.post('/new', upload.single('projectimage'), function(req, res, next){
-
-// router.post('/new', upload.fields([{ name: 'file1', maxCount: 1 }, { name: 'file2', maxCount: 1 }]), function(req, res, next){	
-	// get form values
 	var title 		= req.body.title;
 	var description = req.body.description;
 	var service 	= req.body.service;
 	var client 		= req.body.client;
 	var projectdate	= req.body.projectdate;
-
 
 	// Check Image
 	if(req.file) {
@@ -120,7 +98,82 @@ router.post('/new', upload.single('projectimage'), function(req, res, next){
 		res.location('/admin');
 		res.redirect('/admin');
 	}
-
 });
+
+/* GET Edit Page. */
+router.get('/edit/:id', function(req, res, next) {
+	connection.query('SELECT * FROM projects WHERE id = '+ req.params.id, function(err, row, fields){
+		if(err) throw err;
+		res.render('edit', { 
+			"row": row[0],
+			layout: "layout2"
+		});
+	});	
+});
+
+/* POST Edit Project. */
+router.post('/edit/:id', upload.single('projectimage'), function(req, res, next){
+	var title 		= req.body.title;
+	var description = req.body.description;
+	var service 	= req.body.service;
+	var client 		= req.body.client;
+	var projectdate	= req.body.projectdate;
+
+	// Check Image
+	if(req.file) {
+		// file info		
+		var projectImageName 			= req.file.originalname;
+		var projectImageMime 			= req.file.mimetype;
+		var projectImagePath 			= req.file.path;
+		var projectImageSize 			= req.file.size;
+	}
+	else {
+		var projectImageName = 'noimage.jpg';
+	}
+
+	// Form Field Validation
+	req.checkBody('title', 'Title field is required').notEmpty();
+	req.checkBody('service', 'Service field is required').notEmpty();
+
+	var errors = req.validationErrors();
+
+	if(errors) {
+		res.render('new', {
+			error: errors,
+			title: title,
+			description: description,
+			service: service,
+			client: client
+		});
+	} else {
+		var project = {
+			title: title,
+			description: description,
+			service: service,
+			client: client,
+			date: projectdate,
+			image: projectImageName
+		};
+
+		var query = connection.query('UPDATE projects SET ? WHERE id = ' + req.params.id, project, function(err, result){
+			// Projet Inserted!
+		});
+
+		req.flash('success', 'Project Edited');
+
+		res.location('/admin');
+		res.redirect('/admin');
+	}
+});
+
+router.delete('/delete/:id', function(req, res){
+	connection.query('DELETE FROM projects WHERE id = ' + req.params.id, function(err, result){
+		if(err) throw err;
+	});
+	req.flash('success', 'Project Deleted');
+
+	res.location('/admin');
+	res.redirect('/admin');
+})
 
 module.exports = router;
